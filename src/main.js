@@ -127,6 +127,46 @@ function extractMerchantName(rawText) {
   return merchantLine || "Электронный чек";
 }
 
+function removeDuplicatedProductName(value) {
+  const text = String(value || "").trim();
+
+  if (!text) {
+    return "";
+  }
+
+  if (text.length % 2 === 0) {
+    const half = text.length / 2;
+    const firstPart = text.slice(0, half);
+    const secondPart = text.slice(half);
+
+    if (firstPart === secondPart) {
+      return firstPart.trim();
+    }
+  }
+
+  for (let i = 4; i <= Math.floor(text.length / 2); i += 1) {
+    const part = text.slice(0, i);
+
+    if (text === part + part) {
+      return part.trim();
+    }
+  }
+
+  return text;
+}
+
+function cleanReceiptItemName(line) {
+  let itemName = String(line || "")
+    .replace(/^\s*\d+\s*[\.\)]{1,4}\s*/g, "")
+    .replace(/Цена\s*\*\s*Кол.*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  itemName = removeDuplicatedProductName(itemName);
+
+  return itemName.trim();
+}
+
 function extractReceiptItems(rawText) {
   const lines = String(rawText || "")
     .split("\n")
@@ -136,20 +176,40 @@ function extractReceiptItems(rawText) {
   const items = [];
 
   for (const line of lines) {
-    const match = line.match(/^\d+\.\s+(.+)/);
+    const looksLikeProductLine = /^\s*\d+\s*[\.\)]{1,4}/.test(line);
 
-    if (!match?.[1]) {
+    if (!looksLikeProductLine) {
       continue;
     }
 
-    const itemName = match[1]
-      .replace(/\s+/g, " ")
-      .replace(/Цена\s*\*\s*Кол.*$/i, "")
-      .trim();
+    const itemName = cleanReceiptItemName(line);
 
-    if (itemName.length >= 2) {
-      items.push(itemName);
+    if (!itemName || itemName.length < 2) {
+      continue;
     }
+
+    const lower = itemName.toLowerCase();
+
+    const ignoredWords = [
+      "итог",
+      "наличные",
+      "безналичные",
+      "ндс",
+      "сумма",
+      "сайт",
+      "фн",
+      "фд",
+      "фп",
+      "инн",
+      "смена",
+      "чек",
+    ];
+
+    if (ignoredWords.some((word) => lower.startsWith(word))) {
+      continue;
+    }
+
+    items.push(itemName);
   }
 
   return items;
