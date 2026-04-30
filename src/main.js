@@ -176,7 +176,7 @@ export default async ({ req, res, log, error }) => {
         : JSON.parse(req.body || "{}");
 
     const fileId = body.fileId;
-    const bucketId = body.bucketId || "receipt_files";
+    const bucketId = body.bucketId || "698ded11003046f79899";
 
     if (!fileId) {
       return res.json(
