@@ -127,6 +127,46 @@ function extractMerchantName(rawText) {
   return merchantLine || "Электронный чек";
 }
 
+function extractReceiptItems(rawText) {
+  const lines = String(rawText || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const items = [];
+
+  for (const line of lines) {
+    const match = line.match(/^\d+\.\s+(.+)/);
+
+    if (!match?.[1]) {
+      continue;
+    }
+
+    const itemName = match[1]
+      .replace(/\s+/g, " ")
+      .replace(/Цена\s*\*\s*Кол.*$/i, "")
+      .trim();
+
+    if (itemName.length >= 2) {
+      items.push(itemName);
+    }
+  }
+
+  return items;
+}
+
+function buildReceiptNote(merchantName, items) {
+  const shopName = merchantName || "Электронный чек";
+
+  if (!items.length) {
+    return shopName;
+  }
+
+  return `${shopName}\n\nТовары:\n${items
+    .map((item, index) => `${index + 1}. ${item}`)
+    .join("\n")}`;
+}
+
 function parseReceiptText(rawText) {
   const normalizedText = normalizeText(rawText);
 
@@ -142,13 +182,16 @@ function parseReceiptText(rawText) {
 
   const date = extractDate(rawText);
   const merchantName = extractMerchantName(rawText);
-
+  const items = extractReceiptItems(rawText);
+  const note = buildReceiptNote(merchantName, items);
+  
   return {
     rawText,
     amount,
     date,
     merchantName,
-    note: merchantName,
+    items,
+    note,
   };
 }
 
