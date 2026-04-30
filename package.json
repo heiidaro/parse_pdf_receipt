@@ -1,0 +1,9 @@
+{
+  "name": "parse-pdf-receipt",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "node-appwrite": "latest",
+    "pdf-parse": "^1.1.1"
+  }
+}
